@@ -1,0 +1,10 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "planning-poker",
+  "main": "party/server.ts",
+  "compatibilityDate": "2025-05-25",
+  "serve": {
+    "path": "public",
+    "build": "app/client.tsx"
+  }
+}
