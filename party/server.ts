@@ -1,49 +1,70 @@
-import type * as Party from "partykit/server";
+// party/server.ts
+import * as Party from "partykit/server";
+
+interface Player {
+  name: string;
+  vote: string | null;
+}
+
+interface RoomState {
+  players: Record<string, Player>;
+  revealed: boolean;
+}
+
+interface Message {
+  type: "vote" | "reveal" | "reset" | "setUsername";
+  vote?: string;
+  username?: string;
+}
 
 export default class Server implements Party.Server {
-  count = 0;
+  state: RoomState = {
+    players: {},
+    revealed: false,
+  };
 
   constructor(readonly room: Party.Room) {}
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    // A websocket just connected!
-    console.log(
-      `Connected:
-  id: ${conn.id}
-  room: ${this.room.id}
-  url: ${new URL(ctx.request.url).pathname}`
-    );
-
-    // send the current count to the new client
-    conn.send(this.count.toString());
+    // Initialize player with a default name
+    this.state.players[conn.id] = {
+      name: `Player ${Object.keys(this.state.players).length + 1}`,
+      vote: null,
+    };
+    this.broadcastState();
   }
 
   onMessage(message: string, sender: Party.Connection) {
-    // let's log the message
-    console.log(`connection ${sender.id} sent message: ${message}`);
-    // we could use a more sophisticated protocol here, such as JSON
-    // in the message data, but for simplicity we just use a string
-    if (message === "increment") {
-      this.increment();
+    const data: Message = JSON.parse(message);
+    if (data.type === "vote" && typeof data.vote === "string") {
+      this.state.players[sender.id].vote = data.vote;
+      this.broadcastState();
+    } else if (data.type === "reveal") {
+      this.state.revealed = true;
+      this.broadcastState();
+    } else if (data.type === "reset") {
+      for (const playerId in this.state.players) {
+        this.state.players[playerId].vote = null;
+      }
+      this.state.revealed = false;
+      this.broadcastState();
+    } else if (
+      data.type === "setUsername" &&
+      typeof data.username === "string"
+    ) {
+      this.state.players[sender.id].name =
+        data.username || `Player ${Object.keys(this.state.players).length}`;
+      this.broadcastState();
     }
   }
 
-  onRequest(req: Party.Request) {
-    // response to any HTTP request (any method, any path) with the current
-    // count. This allows us to use SSR to give components an initial value
-
-    // if the request is a POST, increment the count
-    if (req.method === "POST") {
-      this.increment();
-    }
-
-    return new Response(this.count.toString());
+  onClose(conn: Party.Connection) {
+    delete this.state.players[conn.id];
+    this.broadcastState();
   }
 
-  increment() {
-    this.count = (this.count + 1) % 100;
-    // broadcast the new count to all clients
-    this.room.broadcast(this.count.toString(), []);
+  broadcastState() {
+    this.room.broadcast(JSON.stringify({ type: "state", state: this.state }));
   }
 }
 

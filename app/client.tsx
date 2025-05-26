@@ -1,39 +1,196 @@
-import "./styles.css";
+// src/client.tsx
+import PartySocket from "partysocket";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import Counter from "./components/Counter";
+import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 
-function App() {
+// Define state interface
+interface Player {
+  name: string;
+  vote: string | null;
+}
+
+interface RoomState {
+  players: Record<string, Player>;
+  revealed: boolean;
+}
+
+interface Message {
+  type: "state" | "vote" | "reveal" | "reset" | "setUsername";
+  state?: RoomState;
+  vote?: string;
+  username?: string;
+}
+
+// Helper to generate a random room ID
+const generateRoomId = () =>
+  `session-${Math.random().toString(36).substr(2, 9)}`;
+
+function PokerApp() {
+  const { roomId } = useParams<{ roomId: string }>();
+  const [state, setState] = useState<RoomState>({
+    players: {},
+    revealed: false,
+  });
+  const [room] = useState<string>(roomId || generateRoomId());
+  const [username, setUsername] = useState<string>(
+    () => localStorage.getItem(`username_${room}`) || ""
+  );
+  const [tempUsername, setTempUsername] = useState<string>("");
+  const socketRef = useRef<PartySocket | null>(null);
+
+  useEffect(() => {
+    // Initialize PartySocket
+    socketRef.current = new PartySocket({
+      host: "http://localhost:1999", // Update to deployed URL later
+      room,
+    });
+
+    // Send username on connect if it exists
+    if (username) {
+      socketRef.current.onopen = () => {
+        socketRef.current?.send(
+          JSON.stringify({ type: "setUsername", username })
+        );
+      };
+    }
+
+    // Handle incoming messages
+    socketRef.current.onmessage = (event: MessageEvent) => {
+      const data: Message = JSON.parse(event.data);
+      if (data.type === "state") {
+        console.log({ data });
+        setState(data.state || { players: {}, revealed: false });
+      }
+    };
+
+    // Clean up on unmount
+    return () => {
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, [room, username]);
+
+  const submitVote = (vote: number) => {
+    socketRef.current?.send(
+      JSON.stringify({ type: "vote", vote: vote.toString() })
+    );
+  };
+
+  const revealVotes = () => {
+    socketRef.current?.send(JSON.stringify({ type: "reveal" }));
+  };
+
+  const resetRound = () => {
+    socketRef.current?.send(JSON.stringify({ type: "reset" }));
+  };
+
+  const handleSetUsername = () => {
+    if (tempUsername.trim()) {
+      const newUsername = tempUsername.trim();
+      socketRef.current?.send(
+        JSON.stringify({ type: "setUsername", username: newUsername })
+      );
+      setUsername(newUsername);
+      localStorage.setItem(`username_${room}`, newUsername); // Persist username per room
+      setTempUsername("");
+    }
+  };
+
   return (
-    <main>
-      <h1>🎈 Welcome to PartyKit!</h1>
-      <p>
-        This is the React starter. (
-        <a href="https://github.com/partykit/templates/tree/main/templates/react">
-          README on GitHub.
-        </a>
-        )
-      </p>
-      <p>Find your way around:</p>
-      <ul>
-        <li>
-          PartyKit server: <code>party/server.ts</code>
-        </li>
-        <li>
-          Client entrypoint: <code>app/client.tsx</code>
-        </li>
-        <li>
-          The Counter component: <code>app/components/Counter.tsx</code>
-        </li>
-      </ul>
-      <p>
-        Read more: <a href="https://docs.partykit.io">PartyKit docs</a>
-      </p>
-      <p>
-        <i>This counter is multiplayer. Try it with multiple browser tabs.</i>
-      </p>
-      <Counter />
-    </main>
+    <div style={{ padding: "20px" }}>
+      <h1>Planning Poker - Room: {room}</h1>
+      <div>
+        <h3>Connected Players</h3>
+        <ul>
+          {Object.entries(state.players).map(([id, player]) => (
+            <li key={id}>
+              {player.name}:{" "}
+              {state.revealed ? player.vote || "No vote" : "Hidden"}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h3>Your Username</h3>
+        <p>
+          Current:{" "}
+          {username ||
+            state.players[socketRef.current?.id || ""]?.name ||
+            "Not set"}
+        </p>
+        <input
+          type="text"
+          value={tempUsername}
+          onChange={(e) => setTempUsername(e.target.value)}
+          placeholder="Enter new username"
+        />
+        <button onClick={handleSetUsername}>Set Username</button>
+      </div>
+      <div>
+        <h3>Vote</h3>
+        {[1, 2, 3, 5, 8, 13].map((value) => (
+          <button
+            key={value}
+            onClick={() => submitVote(value)}
+            style={{ margin: "5px" }}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+      <button onClick={revealVotes}>Reveal Votes</button>
+      <button onClick={resetRound} style={{ marginLeft: "10px" }}>
+        Reset Round
+      </button>
+      <div>
+        <p>
+          Share this room:{" "}
+          <a href={`${window.location.origin}/#/room/${room}`}>
+            {window.location.origin}/#/room/{room}
+          </a>
+        </p>
+      </div>
+    </div>
   );
 }
 
-createRoot(document.getElementById("app")!).render(<App />);
+function RoomSelector() {
+  const [inputRoom, setInputRoom] = useState<string>("");
+
+  const joinRoom = () => {
+    if (inputRoom.trim()) {
+      window.location.hash = `/room/${inputRoom.trim()}`;
+    }
+  };
+
+  const createRoom = () => {
+    const newRoom = generateRoomId();
+    window.location.hash = `/room/${newRoom}`;
+  };
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <h1>Welcome to Planning Poker</h1>
+      <input
+        type="text"
+        value={inputRoom}
+        onChange={(e) => setInputRoom(e.target.value)}
+        placeholder="Enter room ID"
+      />
+      <button onClick={joinRoom}>Join Room</button>
+      <button onClick={createRoom} style={{ marginLeft: "10px" }}>
+        Create New Room
+      </button>
+    </div>
+  );
+}
+
+createRoot(document.getElementById("app")!).render(
+  <HashRouter>
+    <Routes>
+      <Route path="/room/:roomId" element={<PokerApp />} />
+      <Route path="/" element={<RoomSelector />} />
+    </Routes>
+  </HashRouter>
+);
