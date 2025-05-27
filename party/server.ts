@@ -36,26 +36,32 @@ export default class Server implements Party.Server {
 
   onMessage(message: string, sender: Party.Connection) {
     const data: Message = JSON.parse(message);
-    if (data.type === "vote" && typeof data.vote === "string") {
-      this.state.players[sender.id].vote = data.vote;
-      this.broadcastState();
-    } else if (data.type === "reveal") {
-      this.state.revealed = true;
-      this.broadcastState();
-    } else if (data.type === "reset") {
-      for (const playerId in this.state.players) {
-        this.state.players[playerId].vote = null;
-      }
-      this.state.revealed = false;
-      this.broadcastState();
-    } else if (
-      data.type === "setUsername" &&
-      typeof data.username === "string"
-    ) {
-      this.state.players[sender.id].name =
-        data.username || `Player ${Object.keys(this.state.players).length}`;
-      this.broadcastState();
+    switch (data.type) {
+      case "vote":
+        if (typeof data.vote === "string") {
+          this.state.players[sender.id].vote = data.vote;
+        }
+        break;
+      case "reveal":
+        this.state.revealed = true;
+        break;
+      case "reset":
+        Object.keys(this.state.players).forEach(playerId => {
+          this.state.players[playerId].vote = null;
+        });
+        this.state.revealed = false;
+        break;
+      case "setUsername":
+        if (typeof data.username === "string") {
+          this.state.players[sender.id].name =
+            data.username || `Player ${Object.keys(this.state.players).length}`;
+        }
+        break;
+      default:
+        console.warn(`Unknown message type: ${data.type}`);
     }
+    
+    this.broadcastState();
   }
 
   onClose(conn: Party.Connection) {

@@ -1,8 +1,8 @@
 // src/client.tsx
-import PartySocket from "partysocket";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { HashRouter, Route, Routes, useParams } from "react-router-dom";
+import { usePartySocket } from "partysocket/react";
 
 // Define state interface
 interface Player {
@@ -37,60 +37,37 @@ function PokerApp() {
     () => localStorage.getItem(`username_${room}`) || ""
   );
   const [tempUsername, setTempUsername] = useState<string>("");
-  const socketRef = useRef<PartySocket | null>(null);
 
-  useEffect(() => {
-    // Initialize PartySocket
-    socketRef.current = new PartySocket({
-      host: "http://localhost:1999", // Update to deployed URL later
-      room,
-    });
-
-    // Send username on connect if it exists
-    if (username) {
-      socketRef.current.onopen = () => {
-        socketRef.current?.send(
-          JSON.stringify({ type: "setUsername", username })
-        );
-      };
-    }
-
-    // Handle incoming messages
-    socketRef.current.onmessage = (event: MessageEvent) => {
+  const ws = usePartySocket({
+    room,
+    onMessage: (event: MessageEvent) => {
       const data: Message = JSON.parse(event.data);
       if (data.type === "state") {
-        console.log({ data });
+        console.log(data.state?.players);
         setState(data.state || { players: {}, revealed: false });
       }
-    };
-
-    // Clean up on unmount
-    return () => {
-      socketRef.current?.close();
-      socketRef.current = null;
-    };
-  }, [room, username]);
+    },
+    onOpen: () => {
+      ws.send(JSON.stringify({ type: "setUsername", username }));
+    },
+  });
 
   const submitVote = (vote: number) => {
-    socketRef.current?.send(
-      JSON.stringify({ type: "vote", vote: vote.toString() })
-    );
+    ws.send(JSON.stringify({ type: "vote", vote: vote.toString() }));
   };
 
   const revealVotes = () => {
-    socketRef.current?.send(JSON.stringify({ type: "reveal" }));
+    ws.send(JSON.stringify({ type: "reveal" }));
   };
 
   const resetRound = () => {
-    socketRef.current?.send(JSON.stringify({ type: "reset" }));
+    ws.send(JSON.stringify({ type: "reset" }));
   };
 
   const handleSetUsername = () => {
     if (tempUsername.trim()) {
       const newUsername = tempUsername.trim();
-      socketRef.current?.send(
-        JSON.stringify({ type: "setUsername", username: newUsername })
-      );
+      ws.send(JSON.stringify({ type: "setUsername", username: newUsername }));
       setUsername(newUsername);
       localStorage.setItem(`username_${room}`, newUsername); // Persist username per room
       setTempUsername("");
@@ -114,10 +91,7 @@ function PokerApp() {
       <div>
         <h3>Your Username</h3>
         <p>
-          Current:{" "}
-          {username ||
-            state.players[socketRef.current?.id || ""]?.name ||
-            "Not set"}
+          Current: {username || state.players[ws.id || ""]?.name || "Not set"}
         </p>
         <input
           type="text"
