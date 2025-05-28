@@ -1,5 +1,5 @@
 // src/client.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 import { usePartySocket } from "partysocket/react";
 import cn from "classnames";
@@ -12,6 +12,7 @@ interface Player {
 }
 
 interface RoomState {
+  adminId: string | null;
   players: Record<string, Player>;
   revealed: boolean;
 }
@@ -27,9 +28,22 @@ interface Message {
 const generateRoomId = () =>
   `session-${Math.random().toString(36).substring(2, 11)}`;
 
+// Generate a random connection ID
+const generateConnectionId = () => crypto.randomUUID();
+
+const sortAdminTop =
+  (adminId: string | null) =>
+  ([id1]: [string], [id2]: [string]) => {
+    if (!adminId) return 0;
+    if (id1 === adminId) return -1;
+    if (id2 === adminId) return 1;
+    return id1.localeCompare(id2);
+  };
+
 function PokerApp() {
   const { roomId } = useParams<{ roomId: string }>();
   const [state, setState] = useState<RoomState>({
+    adminId: null,
     players: {},
     revealed: false,
   });
@@ -38,14 +52,29 @@ function PokerApp() {
     () => localStorage.getItem(`username_${room}`) || ""
   );
   const [tempUsername, setTempUsername] = useState<string>("");
+  const [connectionId] = useState<string>(() => {
+    // Try to restore connection ID from localStorage
+    const storedId = localStorage.getItem(`connectionId_${room}`);
+    return storedId || generateConnectionId();
+  });
+
+  // Update connection ID in localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem(`connectionId_${room}`, connectionId);
+  }, [connectionId, room]);
 
   const ws = usePartySocket({
+    id: connectionId,
     room,
     onMessage: (event: MessageEvent) => {
       const data: Message = JSON.parse(event.data);
       if (data.type === "state") {
-        console.log(data.state?.players);
-        setState(data.state || { players: {}, revealed: false });
+        console.log({
+          players: data.state?.players,
+          adminId: data.state?.adminId,
+          revealed: data.state?.revealed,
+        });
+        setState(data.state || { adminId: null, players: {}, revealed: false });
       }
     },
     onOpen: () => {
@@ -78,18 +107,23 @@ function PokerApp() {
   const isCurrentVote = (vote: number) =>
     state.players?.[ws.id]?.vote === vote.toString();
 
+  const isAdmin = (id: string) => state.adminId === id;
+
   return (
     <div className="flex flex-col gap-3 p-6">
       <h1 className="text-2xl font-bold">Planning Poker - Room: {room}</h1>
       <div>
         <h3 className="text-lg font-semibold">Connected Players</h3>
         <ul className="list-disc list-inside">
-          {Object.entries(state.players).map(([id, player]) => (
-            <li key={id}>
-              {player.name}:{" "}
-              {state.revealed ? player.vote || "No vote" : "Hidden"}
-            </li>
-          ))}
+          {Object.entries(state.players)
+            .sort(sortAdminTop(state.adminId))
+            .map(([id, player]) => (
+              <li key={id}>
+                {player.name}:{" "}
+                {state.revealed ? player.vote || "No vote" : "Hidden"}
+                {isAdmin(id) && " (Admin)"}
+              </li>
+            ))}
         </ul>
       </div>
       <div>
@@ -128,20 +162,25 @@ function PokerApp() {
           ))}
         </div>
       </div>
-      <div className="flex gap-2">
-        <button
-          className="border border-gray-300 rounded px-2 py-1"
-          onClick={revealVotes}
-        >
-          Reveal Votes
-        </button>
-        <button
-          className="ml-2 border border-gray-300 rounded px-2 py-1"
-          onClick={resetRound}
-        >
-          Reset Round
-        </button>
-      </div>
+      {isAdmin(ws.id) && (
+        <div>
+          <h3 className="text-lg font-semibold">Admin Actions</h3>
+          <div className="flex gap-2">
+            <button
+              className="border border-gray-300 rounded px-2 py-1"
+              onClick={revealVotes}
+            >
+              Reveal Votes
+            </button>
+            <button
+              className="ml-2 border border-gray-300 rounded px-2 py-1"
+              onClick={resetRound}
+            >
+              Reset Round
+            </button>
+          </div>
+        </div>
+      )}
       <div>
         <p>
           Share this room:{" "}

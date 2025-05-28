@@ -7,6 +7,7 @@ interface Player {
 }
 
 interface RoomState {
+  adminId: string | null;
   players: Record<string, Player>;
   revealed: boolean;
 }
@@ -19,6 +20,7 @@ interface Message {
 
 export default class Server implements Party.Server {
   state: RoomState = {
+    adminId: null,
     players: {},
     revealed: false,
   };
@@ -31,6 +33,9 @@ export default class Server implements Party.Server {
       name: `Player ${Object.keys(this.state.players).length + 1}`,
       vote: null,
     };
+    if (!this.state.adminId) {
+      this.state.adminId = conn.id;
+    }
     this.broadcastState();
   }
 
