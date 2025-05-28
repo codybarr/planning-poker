@@ -12,7 +12,9 @@ Refer to our docs for more information: https://github.com/partykit/partykit/blo
 
 ## Usage
 
-You can start developing by running `npm run dev` and opening [http://localhost:1999](http://localhost:1999) in your browser. When you're ready, you can deploy your application on to the PartyKit cloud with `npm run deploy`.
+Start by running `bun run dev` to spin up the app and server.
+
+Access local dev at: http://localhost:5173
 
 ## Debugging
 

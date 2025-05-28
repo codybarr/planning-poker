@@ -1,8 +1,9 @@
 // src/client.tsx
 import { useState } from "react";
-import { createRoot } from "react-dom/client";
 import { HashRouter, Route, Routes, useParams } from "react-router-dom";
 import { usePartySocket } from "partysocket/react";
+import cn from "classnames";
+import "./styles.css";
 
 // Define state interface
 interface Player {
@@ -24,7 +25,7 @@ interface Message {
 
 // Helper to generate a random room ID
 const generateRoomId = () =>
-  `session-${Math.random().toString(36).substr(2, 9)}`;
+  `session-${Math.random().toString(36).substring(2, 11)}`;
 
 function PokerApp() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -74,12 +75,15 @@ function PokerApp() {
     }
   };
 
+  const isCurrentVote = (vote: number) =>
+    state.players?.[ws.id]?.vote === vote.toString();
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Planning Poker - Room: {room}</h1>
+    <div className="flex flex-col gap-3 p-6">
+      <h1 className="text-2xl font-bold">Planning Poker - Room: {room}</h1>
       <div>
-        <h3>Connected Players</h3>
-        <ul>
+        <h3 className="text-lg font-semibold">Connected Players</h3>
+        <ul className="list-disc list-inside">
           {Object.entries(state.players).map(([id, player]) => (
             <li key={id}>
               {player.name}:{" "}
@@ -89,38 +93,62 @@ function PokerApp() {
         </ul>
       </div>
       <div>
-        <h3>Your Username</h3>
+        <h3 className="text-lg font-semibold">Your Username</h3>
         <p>
           Current: {username || state.players[ws.id || ""]?.name || "Not set"}
         </p>
         <input
+          className="border border-gray-300 rounded px-2 py-1"
           type="text"
           value={tempUsername}
           onChange={(e) => setTempUsername(e.target.value)}
           placeholder="Enter new username"
         />
-        <button onClick={handleSetUsername}>Set Username</button>
+        <button
+          className="ml-2 border border-gray-300 rounded px-2 py-1"
+          onClick={handleSetUsername}
+        >
+          Set Username
+        </button>
       </div>
       <div>
-        <h3>Vote</h3>
-        {[1, 2, 3, 5, 8, 13].map((value) => (
-          <button
-            key={value}
-            onClick={() => submitVote(value)}
-            style={{ margin: "5px" }}
-          >
-            {value}
-          </button>
-        ))}
+        <h3 className="text-lg font-semibold">Vote</h3>
+        <div className="flex gap-2">
+          {[1, 2, 3, 5, 8, 13].map((value) => (
+            <button
+              className={cn(
+                isCurrentVote(value) && "bg-blue-500 text-white",
+                "px-2 py-1 border border-gray-300 rounded w-12 h-12"
+              )}
+              key={value}
+              onClick={() => submitVote(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
       </div>
-      <button onClick={revealVotes}>Reveal Votes</button>
-      <button onClick={resetRound} style={{ marginLeft: "10px" }}>
-        Reset Round
-      </button>
+      <div className="flex gap-2">
+        <button
+          className="border border-gray-300 rounded px-2 py-1"
+          onClick={revealVotes}
+        >
+          Reveal Votes
+        </button>
+        <button
+          className="ml-2 border border-gray-300 rounded px-2 py-1"
+          onClick={resetRound}
+        >
+          Reset Round
+        </button>
+      </div>
       <div>
         <p>
           Share this room:{" "}
-          <a href={`${window.location.origin}/#/room/${room}`}>
+          <a
+            className="text-blue-700 hover:underline"
+            href={`${window.location.origin}/#/room/${room}`}
+          >
             {window.location.origin}/#/room/{room}
           </a>
         </p>
@@ -160,11 +188,13 @@ function RoomSelector() {
   );
 }
 
-createRoot(document.getElementById("app")!).render(
-  <HashRouter>
-    <Routes>
-      <Route path="/room/:roomId" element={<PokerApp />} />
-      <Route path="/" element={<RoomSelector />} />
-    </Routes>
-  </HashRouter>
-);
+export default function App() {
+  return (
+    <HashRouter>
+      <Routes>
+        <Route path="/room/:roomId" element={<PokerApp />} />
+        <Route path="/" element={<RoomSelector />} />
+      </Routes>
+    </HashRouter>
+  );
+}
