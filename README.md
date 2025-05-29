@@ -24,6 +24,9 @@ https://planning-poker.codybarr.partykit.dev
 ## Roadmap
 
 - [x] Add support for admins (only room admin can reveal/reset votes) - show who the admin is (I think we'll set the admin id when creating the room)
-- [ ] Improve UI (style voting cards as playing cards, randomize suit for fun)
+- [x] Improve UI
+- [x] fix: refreshing renames Player 1, 2, etc. (to highest numbered player)
 - [x] Improve User list styles (show who voted, who hasn't voted, etc)
+- [ ] Style voting cards as playing cards, randomize suit for fun
 - [ ] Add support throwing emojis at people
+- [ ] Show voting stats (eg. average, most common, etc.)

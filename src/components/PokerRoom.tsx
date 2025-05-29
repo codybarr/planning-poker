@@ -42,14 +42,14 @@ export default function PokerRoom() {
     revealed: false,
   });
   const [username, setUsername] = useState<string>(
-    () => localStorage.getItem(`username_${roomId}`) || ""
+    () => localStorage.getItem(`username_${roomId}`) || "",
   );
-  const [tempUsername, setTempUsername] = useState<string>("");
   const [connectionId] = useState<string>(() => {
     // Try to restore connection ID from localStorage
     const storedId = localStorage.getItem(`connectionId_${roomId}`);
     return storedId || generateConnectionId();
   });
+  const [isSettingUsername, setIsSettingUsername] = useState<boolean>(false);
 
   // Update connection ID in localStorage when it changes
   useEffect(() => {
@@ -67,11 +67,20 @@ export default function PokerRoom() {
           adminId: data.state?.adminId,
           revealed: data.state?.revealed,
         });
+        if (data.state?.players) {
+          localStorage.setItem(
+            `username_${roomId}`,
+            data.state.players[connectionId].name,
+          );
+        }
         setState(data.state || { adminId: null, players: {}, revealed: false });
       }
     },
     onOpen: () => {
-      ws.send(JSON.stringify({ type: "setUsername", username }));
+      // Send the stored username immediately
+      if (username) {
+        ws.send(JSON.stringify({ type: "setUsername", username }));
+      }
     },
   });
 
@@ -88,12 +97,12 @@ export default function PokerRoom() {
   };
 
   const handleSetUsername = () => {
-    if (tempUsername.trim()) {
-      const newUsername = tempUsername.trim();
+    if (username.trim()) {
+      const newUsername = username.trim();
       ws.send(JSON.stringify({ type: "setUsername", username: newUsername }));
       setUsername(newUsername);
       localStorage.setItem(`username_${roomId}`, newUsername); // Persist username per room
-      setTempUsername("");
+      setIsSettingUsername(false);
     }
   };
 
@@ -103,88 +112,158 @@ export default function PokerRoom() {
   const isAdmin = (id: string) => state.adminId === id;
 
   return (
-    <div className="flex flex-col gap-3 p-6">
-      <h1 className="text-2xl font-bold">Planning Poker - Room: {roomId}</h1>
-      <div>
-        <h3 className="text-lg font-semibold">Connected Players</h3>
-        <ul className="list-disc list-inside">
-          {Object.entries(state.players)
-            .sort(sortAdminTop(state.adminId))
-            .map(([id, player]) => (
-              <li key={id}>
-                {player.name}:{" "}
-                {state.revealed && (player.vote ? player.vote : "No vote")}
-                {!state.revealed && (player.vote ? "👍" : "🤔")}
-                {isAdmin(id) && " (Admin)"}
-              </li>
-            ))}
-        </ul>
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold">Your Username</h3>
-        <p>
-          Current: {username || state.players[ws.id || ""]?.name || "Not set"}
-        </p>
-        <input
-          className="border border-gray-300 rounded px-2 py-1"
-          type="text"
-          value={tempUsername}
-          onChange={(e) => setTempUsername(e.target.value)}
-          placeholder="Enter new username"
-        />
-        <button
-          className="ml-2 border border-gray-300 rounded px-2 py-1"
-          onClick={handleSetUsername}
-        >
-          Set Username
-        </button>
-      </div>
-      <div>
-        <h3 className="text-lg font-semibold">Vote</h3>
-        <div className="flex gap-2">
-          {[1, 2, 3, 5, 8, 13].map((value) => (
-            <button
-              className={cn(
-                isCurrentVote(value) && "bg-blue-500 text-white",
-                "px-2 py-1 border border-gray-300 rounded w-12 h-12"
-              )}
-              key={value}
-              onClick={() => submitVote(value)}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-      </div>
-      {isAdmin(ws.id) && (
-        <div>
-          <h3 className="text-lg font-semibold">Admin Actions</h3>
-          <div className="flex gap-2">
-            <button
-              className="border border-gray-300 rounded px-2 py-1"
-              onClick={revealVotes}
-            >
-              Reveal Votes
-            </button>
-            <button
-              className="ml-2 border border-gray-300 rounded px-2 py-1"
-              onClick={resetRound}
-            >
-              Reset Round
-            </button>
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-indigo-50 p-6">
+      <h1 className="text-center text-3xl font-bold text-indigo-700">
+        Planning Poker - Room: {roomId}
+      </h1>
+      <div className="mt-6 flex flex-1 gap-6">
+        <div className="w-[30vw] rounded-xl bg-white/90 p-8 shadow-2xl backdrop-blur-lg">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-indigo-700">
+                Your Username
+              </h2>
+
+              <div className="mt-4 flex flex-col items-start gap-3 rounded-lg bg-gray-50 p-4">
+                <p className="text-lg text-gray-600">
+                  {username || state.players[ws.id || ""]?.name || "Not set"}
+                </p>
+                {isSettingUsername ? (
+                  <div className="flex gap-4">
+                    <input
+                      type="text"
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder={username}
+                      className="flex-1 rounded-lg border border-gray-200 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                    />
+                    <button
+                      onClick={handleSetUsername}
+                      className="text-sm text-blue-600 underline hover:cursor-pointer"
+                    >
+                      Save
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsSettingUsername(true)}
+                    className="text-sm text-blue-600 underline hover:cursor-pointer"
+                  >
+                    Set Username
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Connected Players */}
+            <div>
+              <h2 className="text-2xl font-bold text-indigo-700">
+                Connected Players
+              </h2>
+              <div className="mt-4 flex flex-col gap-3">
+                {Object.entries(state.players)
+                  .sort(sortAdminTop(state.adminId))
+                  .map(([id, player]) => (
+                    <div
+                      key={id}
+                      className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-4"
+                    >
+                      <div>
+                        <span className={cn(id === ws.id && "font-bold")}>
+                          {player.name}
+                        </span>
+                        {isAdmin(id) && (
+                          <span className="ml-2 text-sm text-indigo-600">
+                            (Admin)
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-gray-600">
+                        {state.revealed &&
+                          (player.vote ? player.vote : "No vote")}
+                        {!state.revealed && (player.vote ? "👍" : "🤔")}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
           </div>
+
+          {/* Admin Actions */}
+          {isAdmin(ws.id) && (
+            <div className="mt-4">
+              <h2 className="mb-4 text-2xl font-bold text-indigo-700">
+                Admin Actions
+              </h2>
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={revealVotes}
+                  className="flex-1 rounded-lg bg-emerald-600 px-6 py-3 text-white transition-colors hover:cursor-pointer hover:bg-emerald-700"
+                >
+                  Reveal Votes
+                </button>
+                <button
+                  onClick={resetRound}
+                  className="flex-1 rounded-lg bg-red-600 px-6 py-3 text-white transition-colors hover:cursor-pointer hover:bg-red-700"
+                >
+                  Reset Round
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-      <div>
-        <p>
-          Share this room:{" "}
-          <a
-            className="text-blue-700 hover:underline"
-            href={`${window.location.origin}/#/room/${roomId}`}
-          >
-            {window.location.origin}/#/room/{roomId}
-          </a>
-        </p>
+
+        <div className="flex flex-1 flex-col justify-between rounded-xl bg-white/90 p-8 shadow-2xl backdrop-blur-lg">
+          {/* Vote */}
+          <div>
+            <h2 className="text-center text-2xl font-bold text-indigo-700">
+              Vote
+            </h2>
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              {state.revealed ? (
+                <div className="col-span-3 space-y-4">
+                  {Object.entries(state.players)
+                    .sort(sortAdminTop(state.adminId))
+                    .map(([id, player]) => (
+                      <div
+                        key={id}
+                        className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
+                      >
+                        <span className="font-medium">{player.name}</span>
+                        <span className="font-bold text-indigo-600">
+                          {player.vote}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                [1, 2, 3, 5, 8, 13, 21, 34, 55].map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => submitVote(value)}
+                    className={cn(
+                      "rounded-lg px-6 py-3 transition-all hover:cursor-pointer",
+                      isCurrentVote(value)
+                        ? "bg-indigo-600 text-white"
+                        : "border border-gray-200 bg-white hover:bg-gray-50",
+                    )}
+                  >
+                    {value}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          <p className="text-center">
+            Share this room:{" "}
+            <a
+              className="text-blue-700 hover:underline"
+              href={`${window.location.origin}/#/room/${roomId}`}
+            >
+              {window.location.origin}/#/room/{roomId}
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

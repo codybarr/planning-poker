@@ -28,14 +28,21 @@ export default class Server implements Party.Server {
   constructor(readonly room: Party.Room) {}
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
-    // Initialize player with a default name
-    this.state.players[conn.id] = {
-      name: `Player ${Object.keys(this.state.players).length + 1}`,
-      vote: null,
-    };
+    // Check if this player already exists in the room
+    const existingPlayer = this.state.players[conn.id];
+    
+    if (!existingPlayer) {
+      // Only assign a default name if this is a new player
+      this.state.players[conn.id] = {
+        name: `Player ${Object.keys(this.state.players).length + 1}`,
+        vote: null,
+      };
+    }
+    
     if (!this.state.adminId) {
       this.state.adminId = conn.id;
     }
+    
     this.broadcastState();
   }
 
