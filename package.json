@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently 'bun run client:dev' 'bun run server:dev'",
+    "dev": "concurrently 'npm run client:dev' 'npm run server:dev'",
     "client:dev": "vite",
     "server:dev": "partykit dev",
     "client:build": "tsc && vite build",
