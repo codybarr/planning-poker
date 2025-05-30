@@ -2,14 +2,21 @@ name: Deploy Partykit app
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu/latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Deploy
-      run: bun run deploy
-    
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: bun install
+      - name: Deploy
+        run: bun run deploy
