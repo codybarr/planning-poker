@@ -4,22 +4,20 @@ https://planning-poker.codybarr.partykit.dev
 
 Welcome to the party, pal!
 
-This is a planning poker sprint planning application built with [Partykit](https://partykit.io).
+Simple planning poker app, built with [Partykit](https://partykit.io), React, and TailwindCSS.
 
 ## Usage
 
-Start by running `bun run dev` to spin up the app and server.
+1. `npm install`
+2. `npm run dev`
 
 Access local dev at: http://localhost:5173
 
 ## Deploy
 
-Run `bun run deploy` to deploy the app and server to PartyKit.
+Automatically deployed on push to main.
 
-## Debugging
-
-bunx partykit env add VITE_PARTYKIT_HOST
-https://planning-poker.codybarr.partykit.dev
+_To manually deploy run `npm run deploy`_
 
 ## Roadmap
 
@@ -27,7 +25,7 @@ https://planning-poker.codybarr.partykit.dev
 - [x] Improve UI
 - [x] fix: refreshing renames Player 1, 2, etc. (to highest numbered player)
 - [x] Improve User list styles (show who voted, who hasn't voted, etc)
-- [ ] Style voting cards as playing cards, randomize suit for fun
-- [ ] Add support throwing emojis at people
+- [x] Style voting cards as playing cards, randomize suit for fun
+- [ ] Add support for throwing emojis at people
 - [ ] Show voting stats (eg. average, most common, etc.)
 - [ ] Refactor to svelte (or at least optimize build)
