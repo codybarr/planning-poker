@@ -13,9 +13,11 @@ interface RoomState {
 }
 
 interface Message {
-  type: "vote" | "reveal" | "reset" | "setUsername";
+  type: "vote" | "reveal" | "reset" | "setUsername" | "throwPizza";
   vote?: string;
   username?: string;
+  targetId?: string;
+  senderId?: string;
 }
 
 export default class Server implements Party.Server {
@@ -67,6 +69,16 @@ export default class Server implements Party.Server {
         if (typeof data.username === "string") {
           this.state.players[sender.id].name =
             data.username || `Player ${Object.keys(this.state.players).length}`;
+        }
+        break;
+      case "throwPizza":
+        if (data.targetId && data.targetId in this.state.players) {
+          // Broadcast the pizza throw to all clients
+          this.room.broadcast(JSON.stringify({
+            type: "throwPizza",
+            senderId: sender.id,
+            targetId: data.targetId
+          }));
         }
         break;
       default:

@@ -30,3 +30,4 @@ https://planning-poker.codybarr.partykit.dev
 - [ ] Style voting cards as playing cards, randomize suit for fun
 - [ ] Add support throwing emojis at people
 - [ ] Show voting stats (eg. average, most common, etc.)
+- [ ] Refactor to svelte (or at least optimize build)

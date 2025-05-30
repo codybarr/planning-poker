@@ -16,10 +16,11 @@ interface RoomState {
 }
 
 interface Message {
-  type: "state" | "vote" | "reveal" | "reset" | "setUsername";
+  type: "state" | "vote" | "reveal" | "reset" | "setUsername" | "throwPizza";
   state?: RoomState;
   vote?: string;
   username?: string;
+  targetId?: string;
 }
 
 // Generate a random connection ID
@@ -75,6 +76,10 @@ export default function PokerRoom() {
         }
         setState(data.state || { adminId: null, players: {}, revealed: false });
       }
+
+      if (data.type === "throwPizza") {
+        handleThrowPizza(data.targetId);
+      }
     },
     onOpen: () => {
       // Send the stored username immediately
@@ -104,6 +109,10 @@ export default function PokerRoom() {
       localStorage.setItem(`username_${roomId}`, newUsername); // Persist username per room
       setIsSettingUsername(false);
     }
+  };
+
+  const handleThrowPizza = (targetId: string) => {
+    const targetPlayer = state.players[targetId];
   };
 
   const isCurrentVote = (vote: number) =>
