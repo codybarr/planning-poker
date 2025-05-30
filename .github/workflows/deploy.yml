@@ -1,0 +1,15 @@
+name: Deploy Partykit app
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu/latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Deploy
+      run: bun run deploy
+    
