@@ -77,9 +77,10 @@ export default function PokerRoom() {
         setState(data.state || { adminId: null, players: {}, revealed: false });
       }
 
-      if (data.type === "throwPizza") {
-        handleThrowPizza(data.targetId);
-      }
+      // TODO
+      // if (data.type === "throwPizza") {
+      //   handleThrowPizza(data.targetId);
+      // }
     },
     onOpen: () => {
       // Send the stored username immediately
@@ -111,9 +112,10 @@ export default function PokerRoom() {
     }
   };
 
-  const handleThrowPizza = (targetId: string) => {
-    const targetPlayer = state.players[targetId];
-  };
+  // TODO
+  // const handleThrowPizza = (targetId: string) => {
+  //   const targetPlayer = state.players[targetId];
+  // };
 
   const isCurrentVote = (vote: number) =>
     state.players?.[ws.id]?.vote === vote.toString();
@@ -185,7 +187,7 @@ export default function PokerRoom() {
             </div>
           ))}
       </div>
-      <div className="flex-1">{/* Voting Stats? */}</div>
+      <div className="min-h-64 flex-1">{/* Voting Stats? */}</div>
       <div className="flex flex-col justify-between gap-4 rounded-xl bg-white/90 p-8 shadow-2xl backdrop-blur-lg">
         {isAdmin(ws.id) && (
           <div className="flex flex-wrap justify-center gap-4">
