@@ -31,7 +31,7 @@ export default function EmojiThrower() {
 
   const throwEmoji = (targetIndex: number, emoji: string) => {
     const fromLeft = Math.random() > 0.5;
-    const container = containerRef.current;
+    const container = document.body;
     const targetPlayer = playersRef.current[targetIndex];
     if (!container || !targetPlayer) return;
 

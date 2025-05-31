@@ -26,6 +26,6 @@ _To manually deploy run `npm run deploy`_
 - [x] fix: refreshing renames Player 1, 2, etc. (to highest numbered player)
 - [x] Improve User list styles (show who voted, who hasn't voted, etc)
 - [x] Style voting cards as playing cards, randomize suit for fun
-- [ ] Add support for throwing emojis at people
+- [x] Add support for throwing emojis at people
 - [ ] Show voting stats (eg. average, most common, etc.)
 - [ ] Refactor to svelte (or at least optimize build)

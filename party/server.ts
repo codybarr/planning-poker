@@ -13,11 +13,12 @@ interface RoomState {
 }
 
 interface Message {
-  type: "vote" | "reveal" | "reset" | "setUsername" | "throwPizza";
+  type: "vote" | "reveal" | "reset" | "setUsername" | "throwEmoji";
   vote?: string;
   username?: string;
   targetId?: string;
   senderId?: string;
+  emoji?: string;
 }
 
 export default class Server implements Party.Server {
@@ -71,13 +72,13 @@ export default class Server implements Party.Server {
             data.username || `Player ${Object.keys(this.state.players).length}`;
         }
         break;
-      case "throwPizza":
+      case "throwEmoji":
         if (data.targetId && data.targetId in this.state.players) {
-          // Broadcast the pizza throw to all clients
+          // Broadcast the emoji throw to all clients
           this.room.broadcast(JSON.stringify({
-            type: "throwPizza",
-            senderId: sender.id,
-            targetId: data.targetId
+            type: "throwEmoji",
+            targetId: data.targetId,
+            emoji: data.emoji
           }));
         }
         break;

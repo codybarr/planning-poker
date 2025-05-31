@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { usePartySocket } from "partysocket/react";
 import { useParams } from "react-router-dom";
+import { gsap } from "gsap";
 import cn from "classnames";
 
 // Define state interface
@@ -16,15 +17,19 @@ interface RoomState {
 }
 
 interface Message {
-  type: "state" | "vote" | "reveal" | "reset" | "setUsername" | "throwPizza";
+  type: "state" | "vote" | "reveal" | "reset" | "setUsername" | "throwEmoji";
   state?: RoomState;
   vote?: string;
   username?: string;
   targetId?: string;
+  emoji?: string;
 }
 
 // Generate a random connection ID
 const generateConnectionId = () => crypto.randomUUID();
+
+const randomRange = (min: number, max: number) =>
+  Math.random() * (max - min) + min;
 
 const sortAdminTop =
   (adminId: string | null) =>
@@ -77,10 +82,9 @@ export default function PokerRoom() {
         setState(data.state || { adminId: null, players: {}, revealed: false });
       }
 
-      // TODO
-      // if (data.type === "throwPizza") {
-      //   handleThrowPizza(data.targetId);
-      // }
+      if (data.type === "throwEmoji") {
+        throwEmoji(data.targetId, data.emoji);
+      }
     },
     onOpen: () => {
       // Send the stored username immediately
@@ -112,10 +116,71 @@ export default function PokerRoom() {
     }
   };
 
-  // TODO
-  // const handleThrowPizza = (targetId: string) => {
-  //   const targetPlayer = state.players[targetId];
-  // };
+  const throwEmoji = (targetId?: string, emoji?: string) => {
+    if (!targetId || !emoji) return;
+    console.log(`Throwing ${emoji} to ${targetId}`);
+
+    // Throw Emoji code.
+    const fromLeft = Math.random() > 0.5;
+    const container = document.body;
+    const targetPlayer = document.querySelector(
+      `[data-player-id="${targetId}"]`,
+    );
+    if (!container || !targetPlayer) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = targetPlayer.getBoundingClientRect();
+
+    // Create emoji element
+    const emojiEl = document.createElement("div");
+    emojiEl.textContent = emoji;
+    emojiEl.style.position = "absolute";
+    emojiEl.style.left = "0px";
+    emojiEl.style.top = "0px";
+    emojiEl.style.fontSize = "2rem";
+    emojiEl.style.pointerEvents = "none";
+    container.appendChild(emojiEl);
+    const emojiRect = emojiEl.getBoundingClientRect();
+
+    const startX = fromLeft ? -50 : containerRect.width + 50; // offscreen to the left
+    const startY = targetRect.top;
+    const targetX = fromLeft
+      ? targetRect.left - emojiRect.width
+      : targetRect.left + targetRect.width;
+    const targetY = targetRect.top;
+
+    gsap.set(emojiEl, { x: startX, y: startY });
+
+    gsap.to(emojiEl, {
+      duration: 1,
+      ease: "power1.in",
+      motionPath: {
+        path: [
+          { x: startX, y: startY },
+          {
+            x: (startX + targetX) / 2,
+            y: startY - randomRange(50, 150),
+          },
+          { x: targetX, y: targetY },
+        ],
+        curviness: 1.25,
+        autoRotate: true,
+      },
+      onComplete: () => {
+        // bounce away from target
+        gsap.to(emojiEl, {
+          duration: randomRange(0.1, 0.5),
+          ease: "power1.out",
+          x: fromLeft ? targetX - 100 : targetX + 150,
+          y: targetY,
+          rotation: () => Math.random() * 360,
+          onComplete: () => {
+            emojiEl.remove(); // Clean up after animation
+          },
+        });
+      },
+    });
+  };
 
   const isCurrentVote = (vote: number) =>
     state.players?.[ws.id]?.vote === vote.toString();
@@ -173,7 +238,9 @@ export default function PokerRoom() {
               </div>
               <div className="text-center text-6xl text-gray-600">
                 {state.revealed && (player.vote ? player.vote : "🚫")}
-                {!state.revealed && (player.vote ? "👍" : "🤔")}
+                {!state.revealed && (
+                  <span data-player-id={id}>{player.vote ? "👍" : "🤔"}</span>
+                )}
               </div>
               <div className="flex min-h-10 justify-center gap-2">
                 {id !== ws.id && (
@@ -182,6 +249,15 @@ export default function PokerRoom() {
                       <button
                         key={emoji}
                         className="inline-flex aspect-square h-10 scale-100 items-center justify-center rounded-lg border border-gray-200 p-1 transition hover:cursor-pointer hover:bg-gray-100 active:scale-90"
+                        onClick={() =>
+                          ws.send(
+                            JSON.stringify({
+                              type: "throwEmoji",
+                              targetId: id,
+                              emoji,
+                            }),
+                          )
+                        }
                       >
                         {emoji}
                       </button>
