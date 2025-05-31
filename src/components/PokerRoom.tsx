@@ -152,7 +152,8 @@ export default function PokerRoom() {
                     }}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder={player.name}
-                    className="flex-1 rounded-lg border border-gray-200 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                    autoFocus={true}
+                    className="max-w-fit rounded-lg border border-gray-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
                   />
                 ) : (
                   <>
@@ -174,15 +175,19 @@ export default function PokerRoom() {
                 {state.revealed && (player.vote ? player.vote : "🚫")}
                 {!state.revealed && (player.vote ? "👍" : "🤔")}
               </div>
-              <div className="flex justify-center gap-2">
-                {["🍕", "✏️", "✈️"].map((emoji) => (
-                  <button
-                    key={emoji}
-                    className="inline-flex aspect-square h-10 scale-100 items-center justify-center rounded-lg border border-gray-200 p-1 transition hover:cursor-pointer hover:bg-gray-100 active:scale-90"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <div className="flex min-h-10 justify-center gap-2">
+                {id !== ws.id && (
+                  <>
+                    {["🍕", "✏️", "✈️"].map((emoji) => (
+                      <button
+                        key={emoji}
+                        className="inline-flex aspect-square h-10 scale-100 items-center justify-center rounded-lg border border-gray-200 p-1 transition hover:cursor-pointer hover:bg-gray-100 active:scale-90"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
           ))}
