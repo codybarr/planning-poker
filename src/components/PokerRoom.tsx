@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { usePartySocket } from "partysocket/react";
 import { useParams } from "react-router-dom";
 import { gsap } from "gsap";
+import Github from "../assets/github.svg?react";
 import cn from "classnames";
 
 // Define state interface
@@ -268,8 +269,8 @@ export default function PokerRoom() {
             </div>
           ))}
       </div>
-      <div className="min-h-64 flex-1">{/* Voting Stats? */}</div>
-      <div className="flex flex-col justify-between gap-4 rounded-xl bg-white/90 p-8 shadow-2xl backdrop-blur-lg">
+      <div className="flex-1">{/* Voting Stats? */}</div>
+      <div className="flex flex-col justify-between gap-6 rounded-xl bg-white/90 p-8 shadow-2xl backdrop-blur-lg">
         {isAdmin(ws.id) && (
           <div className="flex flex-wrap justify-center gap-4">
             {state.revealed ? (
@@ -312,16 +313,16 @@ export default function PokerRoom() {
           })}
         </div>
 
-        {/* Share */}
-        <p className="text-center">
-          Share this room:{" "}
+        <div className="flex justify-center">
           <a
-            className="text-blue-700 hover:underline"
-            href={`${window.location.origin}/#/room/${roomId}`}
+            href="https://github.com/codybarr/planning-poker"
+            rel="noopener noreferrer"
+            target="_blank"
+            className="block scale-100 rotate-0 text-black transition hover:scale-110 hover:rotate-6 hover:text-black/70 active:scale-95"
           >
-            {window.location.origin}/#/room/{roomId}
+            <Github className="h-8 w-8" />
           </a>
-        </p>
+        </div>
       </div>
     </div>
   );

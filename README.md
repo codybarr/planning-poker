@@ -27,5 +27,6 @@ _To manually deploy run `npm run deploy`_
 - [x] Improve User list styles (show who voted, who hasn't voted, etc)
 - [x] Style voting cards as playing cards, randomize suit for fun
 - [x] Add support for throwing emojis at people
+- [x] Add github link
 - [ ] Show voting stats (eg. average, most common, etc.)
-- [ ] Refactor to svelte (or at least optimize build)
+- [ ] Refactor to svelte (or at least optimize build?)
