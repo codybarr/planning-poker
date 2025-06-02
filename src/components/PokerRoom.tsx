@@ -4,6 +4,31 @@ import { usePartySocket } from "partysocket/react";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Github from "../assets/github.svg?react";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
+
+const EMOJIS = [
+  "🍕",
+  "✏️",
+  "🍅",
+  "😬",
+  "😎",
+  "👿",
+  "🧊",
+  "🎯",
+  "🥊",
+  "💥",
+  "🪃",
+  "🧸",
+  "🪓",
+  "🧽",
+  "🐒",
+  "🥚",
+  "🎱",
+  "🚀",
+  "💣",
+  "🪀",
+  "⁉️",
+];
 
 // Define state interface
 interface Player {
@@ -41,6 +66,15 @@ const sortAdminTop =
     return id1.localeCompare(id2);
   };
 
+function getNextEmojiTriple(startIndex: number) {
+  const len = EMOJIS.length;
+  return [
+    EMOJIS[startIndex % len],
+    EMOJIS[(startIndex + 1) % len],
+    EMOJIS[(startIndex + 2) % len],
+  ];
+}
+
 export default function PokerRoom() {
   const { roomId } = useParams<{ roomId: string }>();
   const [state, setState] = useState<RoomState>({
@@ -52,6 +86,9 @@ export default function PokerRoom() {
   const [username, setUsername] = useState<string>(
     () => localStorage.getItem(`username_${roomId}`) || "",
   );
+  const [selectedEmojis, setSelectedEmojis] = useState<string[]>(
+    EMOJIS.slice(0, 3),
+  ); // Default to first 3 emojis
   const [connectionId] = useState<string>(() => {
     // Try to restore connection ID from localStorage
     const storedId = localStorage.getItem(`connectionId_${roomId}`);
@@ -117,6 +154,11 @@ export default function PokerRoom() {
       setIsSettingUsername(false);
     }
   };
+
+  const handleSetSelectedEmojis = () =>
+    setSelectedEmojis((prev) =>
+      getNextEmojiTriple(EMOJIS.indexOf(prev[0]) + 3),
+    );
 
   const throwEmoji = (targetId?: string, emoji?: string) => {
     if (!targetId || !emoji) return;
@@ -198,61 +240,67 @@ export default function PokerRoom() {
         {Object.entries(state.players)
           .sort(sortAdminTop(state.adminId))
           .map(([id, player]) => (
-            <div
-              key={id}
-              className={cn(
-                isAdmin(id) ? "bg-yellow-50" : "bg-gray-50",
-                "relative flex min-w-36 flex-col justify-between gap-3 overflow-hidden rounded-lg border border-gray-200 p-4",
-              )}
-            >
-              {isAdmin(id) && (
-                <span className="absolute inset-0 top-0 flex h-6 w-6 items-center justify-center text-lg">
-                  👑
-                </span>
-              )}
-              <div className="mt-4 flex items-center justify-center gap-2 text-center">
-                {isSettingUsername && id === ws.id ? (
-                  <input
-                    type="text"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleSetUsername();
-                      }
-                    }}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder={player.name}
-                    autoFocus={true}
-                    className="max-w-fit rounded-lg border border-gray-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                  />
-                ) : (
-                  <>
-                    <span className={cn(id === ws.id && "font-bold")}>
-                      {player.name}
+            <HoverCard openDelay={0} closeDelay={100} key={id}>
+              <HoverCardTrigger>
+                <div
+                  key={id}
+                  className={cn(
+                    isAdmin(id) ? "bg-yellow-50" : "bg-gray-50",
+                    "relative flex min-w-36 flex-col justify-between gap-3 overflow-hidden rounded-lg border border-gray-200 p-4",
+                  )}
+                >
+                  {isAdmin(id) && (
+                    <span className="absolute inset-0 top-0 flex h-6 w-6 items-center justify-center text-lg">
+                      👑
                     </span>
-                    {id === ws.id && (
-                      <button
-                        className="hover:cursor-pointer"
-                        onClick={() => setIsSettingUsername(true)}
-                      >
-                        ✏️
-                      </button>
+                  )}
+                  <div className="mt-4 flex items-center justify-center gap-2 text-center">
+                    {isSettingUsername && id === ws.id ? (
+                      <input
+                        type="text"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleSetUsername();
+                          }
+                        }}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder={player.name}
+                        autoFocus={true}
+                        className="max-w-fit rounded-lg border border-gray-200 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      />
+                    ) : (
+                      <>
+                        <span className={cn(id === ws.id && "font-bold")}>
+                          {player.name}
+                        </span>
+                        {id === ws.id && (
+                          <button
+                            className="hover:cursor-pointer"
+                            onClick={() => setIsSettingUsername(true)}
+                          >
+                            ✏️
+                          </button>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
-              <div className="text-center text-6xl text-gray-600">
-                {state.revealed && (player.vote ? player.vote : "🚫")}
-                {!state.revealed && (
-                  <span data-player-id={id}>{player.vote ? "👍" : "🤔"}</span>
-                )}
-              </div>
-              <div className="flex min-h-10 justify-center gap-2">
-                {id !== ws.id && (
-                  <>
-                    {["🍕", "✏️", "✈️"].map((emoji) => (
+                  </div>
+                  <div className="text-center text-6xl text-gray-600">
+                    {state.revealed && (player.vote ? player.vote : "🚫")}
+                    {!state.revealed && (
+                      <span data-player-id={id}>
+                        {player.vote ? "👍" : "🤔"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </HoverCardTrigger>
+              {id !== ws.id && (
+                <HoverCardContent className="w-fit">
+                  <div className="flex min-h-10 justify-center gap-2">
+                    {selectedEmojis.map((emoji) => (
                       <button
                         key={emoji}
-                        className="inline-flex aspect-square h-10 scale-100 items-center justify-center rounded-lg border border-gray-200 p-1 transition hover:cursor-pointer hover:bg-gray-100 active:scale-90"
+                        className="inline-flex aspect-square h-10 scale-100 items-center justify-center rounded-lg border border-gray-200 p-1 transition select-none hover:cursor-pointer hover:bg-gray-100 active:scale-90"
                         onClick={() =>
                           ws.send(
                             JSON.stringify({
@@ -266,10 +314,17 @@ export default function PokerRoom() {
                         {emoji}
                       </button>
                     ))}
-                  </>
-                )}
-              </div>
-            </div>
+                    <button
+                      className="inline-flex aspect-square h-10 scale-100 items-center justify-center rounded-lg border border-gray-200 p-1 transition select-none hover:cursor-pointer hover:bg-gray-100 active:scale-90"
+                      onClick={handleSetSelectedEmojis}
+                      title="Change Emojis"
+                    >
+                      🔄
+                    </button>
+                  </div>
+                </HoverCardContent>
+              )}
+            </HoverCard>
           ))}
       </div>
       <div className="flex-1">{/* Voting Stats? */}</div>
