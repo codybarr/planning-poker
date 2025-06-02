@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { usePartySocket } from "partysocket/react";
-import { useParams } from "react-router-dom";
-import { gsap } from "gsap";
-import Github from "../assets/github.svg?react";
 import cn from "classnames";
+import { gsap } from "gsap";
+import { usePartySocket } from "partysocket/react";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import Github from "../assets/github.svg?react";
 
 // Define state interface
 interface Player {
@@ -48,6 +48,7 @@ export default function PokerRoom() {
     players: {},
     revealed: false,
   });
+  const container = useRef<HTMLDivElement>(null);
   const [username, setUsername] = useState<string>(
     () => localStorage.getItem(`username_${roomId}`) || "",
   );
@@ -123,13 +124,12 @@ export default function PokerRoom() {
 
     // Throw Emoji code.
     const fromLeft = Math.random() > 0.5;
-    const container = document.body;
     const targetPlayer = document.querySelector(
       `[data-player-id="${targetId}"]`,
     );
-    if (!container || !targetPlayer) return;
+    if (!container.current || !targetPlayer) return;
 
-    const containerRect = container.getBoundingClientRect();
+    const containerRect = container?.current?.getBoundingClientRect();
     const targetRect = targetPlayer.getBoundingClientRect();
 
     // Create emoji element
@@ -140,7 +140,7 @@ export default function PokerRoom() {
     emojiEl.style.top = "0px";
     emojiEl.style.fontSize = "2rem";
     emojiEl.style.pointerEvents = "none";
-    container.appendChild(emojiEl);
+    container?.current?.appendChild(emojiEl);
     const emojiRect = emojiEl.getBoundingClientRect();
 
     const startX = fromLeft ? -50 : containerRect.width + 50; // offscreen to the left
@@ -189,7 +189,10 @@ export default function PokerRoom() {
   const isAdmin = (id: string) => state.adminId === id;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-indigo-50 p-6">
+    <div
+      ref={container}
+      className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b from-blue-50 to-indigo-50 p-6"
+    >
       {/* Connected Players */}
       <div className="mt-4 flex items-stretch justify-center gap-3">
         {Object.entries(state.players)
@@ -301,7 +304,7 @@ export default function PokerRoom() {
                 className={cn(
                   "flex aspect-[2/3] w-24 flex-col justify-between gap-6 rounded-lg p-2 transition-all hover:cursor-pointer",
                   isCurrentVote(value)
-                    ? "bg-indigo-600 text-white"
+                    ? "bg-sky-500 text-white"
                     : "border border-gray-200 bg-white hover:bg-gray-50",
                 )}
               >
