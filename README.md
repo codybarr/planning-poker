@@ -29,6 +29,6 @@ _To manually deploy run `npm run deploy`_
 - [x] Add support for throwing emojis at people
 - [x] Add github link
 - [x] fix resizing body issue when throwing emojis
-- [ ] add support for more emojis
+- [x] add support for more emojis
 - [ ] Show voting stats (eg. average, most common, etc.)
-- [ ] Refactor to svelte (or at least optimize build?)
+- [ ] Refactor to svelte
