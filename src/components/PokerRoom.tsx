@@ -4,6 +4,7 @@ import { usePartySocket } from "partysocket/react";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Github from "../assets/github.svg?react";
+import { Button } from "./ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./ui/hover-card";
 
 const EMOJIS = [
@@ -111,11 +112,6 @@ export default function PokerRoom() {
     onMessage: (event: MessageEvent) => {
       const data: Message = JSON.parse(event.data);
       if (data.type === "state") {
-        console.log({
-          players: data.state?.players,
-          adminId: data.state?.adminId,
-          revealed: data.state?.revealed,
-        });
         if (data.state?.players) {
           localStorage.setItem(
             `username_${roomId}`,
@@ -166,7 +162,6 @@ export default function PokerRoom() {
 
   const throwEmoji = (targetId?: string, emoji?: string) => {
     if (!targetId || !emoji) return;
-    console.log(`Throwing ${emoji} to ${targetId}`);
 
     // Throw Emoji code.
     const fromLeft = Math.random() > 0.5;
@@ -237,7 +232,7 @@ export default function PokerRoom() {
   return (
     <div
       ref={container}
-      className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b from-blue-50 to-indigo-50 p-6"
+      className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-neutral-50 via-neutral-200 to-neutral-50 p-6"
     >
       {/* Connected Players */}
       <div className="mt-4 flex flex-wrap items-stretch justify-center gap-3">
@@ -250,7 +245,7 @@ export default function PokerRoom() {
                   key={id}
                   className={cn(
                     isAdmin(id) ? "bg-yellow-50" : "bg-gray-50",
-                    "relative flex min-w-36 flex-col justify-between gap-3 overflow-hidden rounded-lg border border-gray-200 p-4",
+                    "relative flex min-w-36 flex-col justify-between gap-3 overflow-hidden rounded-lg border border-gray-200 p-4 shadow transition-shadow hover:shadow-lg",
                   )}
                 >
                   {isAdmin(id) && (
@@ -330,23 +325,17 @@ export default function PokerRoom() {
           ))}
       </div>
       <div className="flex-1">{/* Voting Stats? */}</div>
-      <div className="flex flex-col justify-between gap-6 rounded-xl bg-white/90 p-8 shadow-2xl backdrop-blur-lg">
+      <div className="flex flex-col justify-between gap-6">
         {isAdmin(ws.id) && (
           <div className="flex flex-wrap justify-center gap-4">
             {state.revealed ? (
-              <button
-                onClick={resetRound}
-                className="rounded-lg bg-red-600 px-6 py-3 text-white transition-colors hover:cursor-pointer hover:bg-red-700"
-              >
+              <Button variant="destructive" size="xl" onClick={resetRound}>
                 Reset Round 🔄
-              </button>
+              </Button>
             ) : (
-              <button
-                onClick={revealVotes}
-                className="rounded-lg bg-emerald-600 px-6 py-3 text-white transition-colors hover:cursor-pointer hover:bg-emerald-700"
-              >
+              <Button variant="default" size="xl" onClick={revealVotes}>
                 Reveal Votes 👀
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -360,7 +349,7 @@ export default function PokerRoom() {
                   key={value}
                   onClick={() => submitVote(value)}
                   className={cn(
-                    "flex aspect-[2/3] w-24 flex-col justify-between gap-6 rounded-lg p-2 transition-all hover:cursor-pointer",
+                    "flex aspect-[2/3] w-24 flex-col justify-between gap-6 rounded-lg p-2 shadow transition-all hover:cursor-pointer hover:shadow-lg",
                     isCurrentVote(value)
                       ? "bg-sky-500 text-white"
                       : "border border-gray-200 bg-white hover:bg-gray-50",
@@ -386,7 +375,7 @@ export default function PokerRoom() {
             href="https://github.com/codybarr/planning-poker"
             rel="noopener noreferrer"
             target="_blank"
-            className="block scale-100 rotate-0 text-black transition hover:scale-110 hover:rotate-6 hover:text-black/70 active:scale-95"
+            className="block scale-100 rotate-0 text-black/70 transition hover:scale-110 hover:rotate-6 hover:text-black active:scale-95"
           >
             <Github className="h-8 w-8" />
           </a>
