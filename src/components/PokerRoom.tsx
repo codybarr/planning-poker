@@ -236,7 +236,7 @@ export default function PokerRoom() {
       className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-b from-blue-50 to-indigo-50 p-6"
     >
       {/* Connected Players */}
-      <div className="mt-4 flex items-stretch justify-center gap-3">
+      <div className="mt-4 flex flex-wrap items-stretch justify-center gap-3">
         {Object.entries(state.players)
           .sort(sortAdminTop(state.adminId))
           .map(([id, player]) => (
