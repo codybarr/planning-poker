@@ -324,7 +324,103 @@ export default function PokerRoom() {
             </HoverCard>
           ))}
       </div>
-      <div className="flex-1">{/* Voting Stats? */}</div>
+      <div className="flex flex-1 flex-col items-center justify-center">
+        {state.revealed && (
+          <>
+            <h3 className="mb-4 text-center text-3xl font-extrabold text-black dark:text-white">
+              Voting Stats
+            </h3>
+            <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-2xl border-none bg-white p-8 shadow-lg">
+              {(() => {
+                // Gather votes
+                const votes = Object.values(state.players)
+                  .map((p) => p.vote)
+                  .filter((v): v is string => !!v);
+                if (votes.length === 0) {
+                  return (
+                    <div className="text-center text-xl font-semibold text-blue-100">
+                      No votes were cast.
+                    </div>
+                  );
+                }
+                // Count votes
+                const voteCounts = votes.reduce<Record<string, number>>(
+                  (acc, v) => {
+                    acc[v] = (acc[v] || 0) + 1;
+                    return acc;
+                  },
+                  {},
+                );
+                // Find most common vote(s)
+                const maxCount = Math.max(...Object.values(voteCounts));
+                const mostCommonVotes = Object.entries(voteCounts)
+                  .filter(([_, count]) => count === maxCount)
+                  .map(([vote]) => vote);
+
+                // Calculate average (for numeric votes)
+                const numericVotes = votes
+                  .map((v) => Number(v))
+                  .filter((n) => !isNaN(n));
+                const avg =
+                  numericVotes.length > 0
+                    ? (
+                        numericVotes.reduce((a, b) => a + b, 0) /
+                        numericVotes.length
+                      ).toFixed(2)
+                    : null;
+
+                return (
+                  <div className="flex w-full flex-col gap-6">
+                    <div className="flex flex-wrap justify-center gap-4">
+                      {Object.entries(voteCounts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([vote, count]) => (
+                          <span
+                            key={vote}
+                            className={cn(
+                              "inline-flex min-h-[56px] min-w-[72px] items-center justify-center gap-2 rounded-xl px-4 py-3 text-2xl font-bold shadow transition-all",
+                              mostCommonVotes.includes(vote)
+                                ? "scale-105 bg-blue-700 text-white ring-2 ring-blue-300"
+                                : "bg-blue-400/80 text-white/80",
+                            )}
+                          >
+                            {vote}{" "}
+                            <span className="text-lg font-medium">
+                              ×{count}
+                            </span>
+                          </span>
+                        ))}
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-4">
+                      <div className="flex min-w-[120px] flex-col items-center rounded-xl bg-blue-700/90 px-6 py-4">
+                        <span className="mb-1 text-lg font-semibold text-white">
+                          Most Common
+                        </span>
+                        <span className="text-3xl font-extrabold text-white">
+                          {mostCommonVotes.join(", ")}
+                        </span>
+                        <span className="mt-1 text-sm text-blue-200">
+                          {maxCount} vote{maxCount > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      {avg && (
+                        <div className="flex min-w-[120px] flex-col items-center rounded-xl bg-blue-700/90 px-6 py-4">
+                          <span className="mb-1 text-lg font-semibold text-white">
+                            Average
+                          </span>
+                          <span className="text-3xl font-extrabold text-white">
+                            {Number(avg).toFixed(1).replace(/\.0$/, "")}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </>
+        )}
+      </div>
       <div className="flex flex-col justify-between gap-6">
         {isAdmin(ws.id) && (
           <div className="flex flex-wrap justify-center gap-4">
