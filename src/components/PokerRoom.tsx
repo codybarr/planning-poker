@@ -285,12 +285,10 @@ export default function PokerRoom() {
                     )}
                   </div>
                   <div className="text-center text-6xl text-gray-600">
-                    {state.revealed && (player.vote ? player.vote : "🚫")}
-                    {!state.revealed && (
-                      <span data-player-id={id}>
-                        {player.vote ? "👍" : "🤔"}
-                      </span>
-                    )}
+                    <span data-player-id={id}>
+                      {state.revealed && (player.vote ? player.vote : "🚫")}
+                      {!state.revealed && (player.vote ? "👍" : "🤔")}
+                    </span>
                   </div>
                 </div>
               </HoverCardTrigger>
