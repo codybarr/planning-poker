@@ -30,6 +30,8 @@ const EMOJIS = [
   "⁉️",
 ];
 
+const VOTE_EMOJIS = ["🍰", "🍩", "🍦", "🍪"];
+
 // Define state interface
 interface Player {
   name: string;
@@ -95,7 +97,9 @@ export default function PokerRoom() {
     return storedId || generateConnectionId();
   });
   const [isSettingUsername, setIsSettingUsername] = useState<boolean>(false);
-
+  const [randomVoteEmoji] = useState<string>(
+    VOTE_EMOJIS[Math.floor(Math.random() * VOTE_EMOJIS.length)],
+  );
   // Update connection ID in localStorage when it changes
   useEffect(() => {
     localStorage.setItem(`connectionId_${roomId}`, connectionId);
@@ -133,7 +137,7 @@ export default function PokerRoom() {
     },
   });
 
-  const submitVote = (vote: number) => {
+  const submitVote = (vote: number | string) => {
     ws.send(JSON.stringify({ type: "vote", vote: vote.toString() }));
   };
 
@@ -225,7 +229,7 @@ export default function PokerRoom() {
     });
   };
 
-  const isCurrentVote = (vote: number) =>
+  const isCurrentVote = (vote: number | string) =>
     state.players?.[ws.id]?.vote === vote.toString();
 
   const isAdmin = (id: string) => state.adminId === id;
@@ -348,25 +352,33 @@ export default function PokerRoom() {
         )}
         {/* Vote */}
         <div className="flex flex-wrap justify-center gap-4">
-          {[1, 2, 3, 5, 8, 13, 21, 34, 55].map((value, idx) => {
-            const suit = ["♥️", "♠️", "♦️", "♣️"][idx % 4];
-            return (
-              <button
-                key={value}
-                onClick={() => submitVote(value)}
-                className={cn(
-                  "flex aspect-[2/3] w-24 flex-col justify-between gap-6 rounded-lg p-2 transition-all hover:cursor-pointer",
-                  isCurrentVote(value)
-                    ? "bg-sky-500 text-white"
-                    : "border border-gray-200 bg-white hover:bg-gray-50",
-                )}
-              >
-                <span className="self-start">{suit}</span>
-                <span className="self-center text-3xl font-bold">{value}</span>
-                <span className="rotate-180 transform self-end">{suit}</span>
-              </button>
-            );
-          })}
+          {[1, 2, 3, 5, 8, 13, 21, 34, 55, randomVoteEmoji].map(
+            (value, idx) => {
+              const suit = ["♥️", "♠️", "♦️", "♣️"][idx % 4];
+              return (
+                <button
+                  key={value}
+                  onClick={() => submitVote(value)}
+                  className={cn(
+                    "flex aspect-[2/3] w-24 flex-col justify-between gap-6 rounded-lg p-2 transition-all hover:cursor-pointer",
+                    isCurrentVote(value)
+                      ? "bg-sky-500 text-white"
+                      : "border border-gray-200 bg-white hover:bg-gray-50",
+                  )}
+                >
+                  <span className="self-start">
+                    {!isNaN(Number(value)) && suit}
+                  </span>
+                  <span className="self-center text-3xl font-bold">
+                    {value}
+                  </span>
+                  <span className="rotate-180 transform self-end">
+                    {!isNaN(Number(value)) && suit}
+                  </span>
+                </button>
+              );
+            },
+          )}
         </div>
 
         <div className="flex justify-center">
